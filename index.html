@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -33,7 +32,11 @@
         .merhaba-text {
             position: relative;
             z-index: 2; /* Arkaplanın önünde durması için */
-            font-size: 8rem;
+            
+            /* RESPONSIVE YAZI BOYUTU (Sihirli Kısım) */
+            /* Minimum 3rem, ideal olarak ekranın %12'si kadar, maksimum 8rem büyüklüğünde olur */
+            font-size: clamp(3rem, 12vw, 8rem); 
+            
             font-weight: 900;
             letter-spacing: 5px;
             /* Renk geçişi (Gradient) */
@@ -45,6 +48,7 @@
             filter: drop-shadow(0px 0px 15px rgba(79, 172, 254, 0.5));
             animation: gradient-shift 5s ease infinite;
             pointer-events: none; /* Farenin yazının altındaki animasyonu algılaması için */
+            text-align: center;
         }
 
         /* Yazı Rengi Animasyonu */
@@ -62,7 +66,7 @@
     <div class="merhaba-text">Merhaba</div>
 
     <script>
-        // --- JavaScript ile Mouse Etkileşimli Partikül Animasyonu ---
+        // --- JavaScript ile Mouse/Touch Etkileşimli Partikül Animasyonu ---
         const canvas = document.getElementById('canvas-container');
         const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth;
@@ -70,21 +74,32 @@
 
         let particlesArray;
 
-        // Farenin konumunu tutacağımız obje
+        // Farenin/Parmağın konumunu tutacağımız obje
         let mouse = {
             x: null,
             y: null,
-            radius: 150 // Farenin partikülleri itme/çekme alanı
+            // Telefondaysa etki alanını biraz küçült, bilgisayardaysa normal bırak
+            radius: window.innerWidth < 768 ? 100 : 150 
         }
 
-        // Fare hareketini dinle
+        // --- BİLGİSAYAR İÇİN FARE DİNLEYİCİLERİ ---
         window.addEventListener('mousemove', function(event) {
             mouse.x = event.x;
             mouse.y = event.y;
         });
 
-        // Fare ekrandan çıkınca
         window.addEventListener('mouseout', function() {
+            mouse.x = undefined;
+            mouse.y = undefined;
+        });
+
+        // --- MOBİL İÇİN DOKUNMATİK DİNLEYİCİLERİ (YENİ EKLENDİ) ---
+        window.addEventListener('touchmove', function(event) {
+            mouse.x = event.touches[0].clientX;
+            mouse.y = event.touches[0].clientY;
+        });
+
+        window.addEventListener('touchend', function() {
             mouse.x = undefined;
             mouse.y = undefined;
         });
@@ -108,9 +123,8 @@
                 ctx.fill();
             }
             
-            // Partikülün hareketini ve fare ile etkileşimini hesapla
+            // Partikülün hareketini hesapla
             update() {
-                // Ekran sınırlarına çarpma kontrolü
                 if (this.x > canvas.width || this.x < 0) {
                     this.directionX = -this.directionX;
                 }
@@ -118,12 +132,10 @@
                     this.directionY = -this.directionY;
                 }
 
-                // Fare ile partikül arasındaki mesafe
                 let dx = mouse.x - this.x;
                 let dy = mouse.y - this.y;
                 let distance = Math.sqrt(dx*dx + dy*dy);
 
-                // Fare yaklaştığında partikülleri kaçır
                 if (distance < mouse.radius + this.size){
                     if (mouse.x < this.x && this.x < canvas.width - this.size * 10) {
                         this.x += 5;
@@ -138,7 +150,6 @@
                         this.y -= 5;
                     }
                 }
-                // Sürekli hareket
                 this.x += this.directionX;
                 this.y += this.directionY;
                 this.draw();
@@ -148,7 +159,10 @@
         // Partikülleri oluştur
         function init() {
             particlesArray = [];
-            let numberOfParticles = (canvas.height * canvas.width) / 9000;
+            // Ekranda çok fazla partikül olup telefonu kasmasın diye yoğunluğu ayarladık
+            let particleDensity = window.innerWidth < 768 ? 12000 : 9000;
+            let numberOfParticles = (canvas.height * canvas.width) / particleDensity;
+            
             for (let i = 0; i < numberOfParticles; i++) {
                 let size = (Math.random() * 3) + 1;
                 let x = (Math.random() * ((innerWidth - size * 2) - (size * 2)) + size * 2);
@@ -161,7 +175,7 @@
             }
         }
 
-        // Partiküller arası bağ (çizgi) oluştur
+        // Çizgileri oluştur
         function connect() {
             for (let a = 0; a < particlesArray.length; a++) {
                 for (let b = a; b < particlesArray.length; b++) {
@@ -181,7 +195,6 @@
             }
         }
 
-        // Animasyon Döngüsü
         function animate() {
             requestAnimationFrame(animate);
             ctx.clearRect(0, 0, innerWidth, innerHeight);
@@ -192,14 +205,14 @@
             connect();
         }
 
-        // Ekran boyutu değiştiğinde canvas'ı güncelle
+        // Ekran boyutu değiştiğinde/telefon yan çevrildiğinde güncelle
         window.addEventListener('resize', function(){
             canvas.width = innerWidth;
             canvas.height = innerHeight;
+            mouse.radius = window.innerWidth < 768 ? 100 : 150;
             init();
         });
 
-        // Başlat
         init();
         animate();
     </script>
